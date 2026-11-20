@@ -88,6 +88,8 @@ def initialize_volume(path, identity, catalogue_id, permit_key):
     def prepare(database):
         for statement in _VOLUME_SCHEMA:
             database.execute(statement)
+        from media.corrections import initialize_corrections
+        initialize_corrections(database)
         database.execute('INSERT OR IGNORE INTO volume_binding VALUES (1, ?, ?, ?, ?, ?)',
                          (*fields, catalogue_id, permit_key))
         if volume_settings(database) != VolumeSettings(identity, catalogue_id, permit_key):
@@ -101,6 +103,8 @@ def open_volume(path):
     database = open_store(path, 'volume')
     try:
         volume_settings(database)
+        from media.corrections import initialize_corrections
+        initialize_corrections(database)
     except BaseException:
         database.close()
         raise

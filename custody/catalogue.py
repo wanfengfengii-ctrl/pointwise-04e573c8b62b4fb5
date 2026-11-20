@@ -33,6 +33,8 @@ def initialize_catalogue(path, catalogue_id):
     def prepare(database):
         initialize_receipts(database)
         initialize_requests(database)
+        from custody.corrections import initialize_correction_requests
+        initialize_correction_requests(database)
         for statement in _CUSTODY_SCHEMA:
             database.execute(statement)
 
@@ -40,7 +42,10 @@ def initialize_catalogue(path, catalogue_id):
 
 
 def open_catalogue(path):
-    return open_store(path, 'catalogue')
+    database = open_store(path, 'catalogue')
+    from custody.corrections import initialize_correction_requests
+    initialize_correction_requests(database)
+    return database
 
 
 @contextmanager

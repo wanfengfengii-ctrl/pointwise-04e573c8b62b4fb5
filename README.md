@@ -15,7 +15,7 @@
 
 ## 运行
 
-仅需 Python 3.11 标准库。在工程目录运行完整回归和交班演练。
+仅需 Python 3.11 标准库。在工程目录运行完整回归和交班演练。完整回归包含 V1 套件与晚到勘误套件（断源、单域拒领、待发布门槛、中断重开及两卷各领新旧账）；`demo.py` 在 V1 交班演练后追加勘误交班演练，`correction_cases.py` 另给 V1 正常对照与独立勘误演练。
 
 ```sh
 python3 -B check_project.py
@@ -36,6 +36,10 @@ python3 -B demo.py
 - `retire.execution.execute(volume, decision.permit)` 验证许可并返回站端 `ExitResult`。原许可重投会重领结果。`retire.reconciliation.reconcile(catalogue, result)` 核对并结清原请求，重复回包重领原结果。
 - `audit.retrieve.read(batch_id, volume=volume, expected_copy=copy)` 从所选站库领取，`expected_copy` 可省略。领取按实际行复核首执及合计。缺批、缺修订或未登记对象以 `KeyError` 拒绝，输入、身份、完整性或状态冲突以 `ValueError` 拒绝，底层存储故障保留 SQLite 异常。拒绝时无部分报告。
 
+## 已释放日批的晚到勘误
+
+`custody.corrections.publish_correction(catalogue, request_id, parent_volume, parent_copy, correction, targets, *, after_event=None)` 在不访问热源的前提下办理勘误：父材料从已放行父批的已验存续卷实读，两个独立故障域的目标卷各自准备完整候选并经实读验收后，目录才固定后继号与正式首执（`audit.receipts.Receipt`），随后把发布依据逐卷送达。返回 `(batch_id, receipt)`。候选在取得发布依据前经 `audit.retrieve.read` 领取会抛 `media.readback.PendingCorrectionError`（`ValueError` 子类），卷从未准备该号时仍为 `KeyError`。中断后以同号同绑定续办，异参重投抛 `ValueError`；详见 CORRECTIONS.md。
+
 ## 回归范围
 
-覆盖日批原序及缺测、合法勘误与旧批、零读数、跨整数范围计量、双域放行、同域及未验副本、缺行或出处失配、写入回滚、断源首执、正常退卷、错卷、许可重领、旧预查、补副、重开、丢回包和终局重投。
+覆盖日批原序及缺测、合法勘误与旧批、零读数、跨整数范围计量、双域放行、同域及未验副本、缺行或出处失配、写入回滚、断源首执、正常退卷、错卷、许可重领、旧预查、补副、重开、丢回包和终局重投。晚到勘误另覆盖断源办理、待发布与缺号门槛、同域及错父件拒签、跨候选材料、逐行谱系封签、写入回滚续办、`prepared/published/available` 中断重开、异参拒绝及两卷离线领取同一新账。

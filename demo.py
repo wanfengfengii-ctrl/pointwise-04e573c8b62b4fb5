@@ -10,6 +10,7 @@ from batch.freeze import freeze
 from batch.intake import intake
 from batch.lineage import ObservationRow, SourceReference
 from batch.storage import initialize_source_store, open_source_store
+from correction_cases import run_correction_handover
 from custody.catalogue import initialize_catalogue, open_catalogue
 from custody.eligibility import eligible_domains
 from custody.registry import register_volume_domain
@@ -141,6 +142,13 @@ def run(directory):
     show_day(day)
 
 
+def run_correction_demo(directory):
+    try:
+        run_correction_handover(directory)
+    except AssertionError as error:
+        raise BusinessFailure(f'CORRECTION_HANDOVER_MISMATCH {error}') from error
+
+
 def main():
     parser = argparse.ArgumentParser(description='Run the basin archive sample day')
     parser.add_argument('--directory', type=Path, help='keep the sample day under this work directory')
@@ -149,8 +157,11 @@ def main():
         if arguments.directory is None:
             with TemporaryDirectory() as directory:
                 run(Path(directory))
+            with TemporaryDirectory() as correction_directory:
+                run_correction_demo(Path(correction_directory))
         else:
             run(arguments.directory)
+            run_correction_demo(arguments.directory / 'correction-day')
     except BusinessFailure as error:
         print(str(error))
         return 2
